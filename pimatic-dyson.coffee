@@ -199,9 +199,9 @@ module.exports = (env) ->
         @purelinkDevice.getDevices()
         .then (devices)=>
           _device = _.find(devices, (d)=> d._deviceInfo.Serial is config.serial)
-          if _device?
+          if _device? and _.size(@purelinkDevice._devices) > 0
             @purelinkDevice = _device
-            if _.size(@purelinkDevice._devices) > 0 then return true
+            return true
       return false
 
 

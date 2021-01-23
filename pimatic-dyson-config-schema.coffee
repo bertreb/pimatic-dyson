@@ -10,8 +10,9 @@ module.exports = {
       descpription: "The password for your dyson account"
       type: "string"
     countrycode:
-      descpription: "Your country code like 'DE'"
+      descpription: "Your country code"
       type: "string"
+      default: "US"
     polltime:
       descpription: "Time for update in values (default 1 minute)"
       type: "number"
