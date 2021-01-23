@@ -1,0 +1,42 @@
+{
+  "name": "pimatic-dyson",
+  "description": "Pimatic plugin to control Dyson Pure devices",
+  "author": {
+    "name": "Bert Gierveld",
+    "email": "gitbertreb@gmail.com",
+    "url": "https://github.com/bertreb"
+  },
+  "main": "pimatic-dyson",
+  "files": [
+    "pimatic-dyson.coffee",
+    "pimatic-dyson-config-schema.coffee",
+    "device-config-schema.coffee",
+    "README.md",
+    "LICENSE",
+    "HISTORY.md"
+  ],
+  "homepage": "https://github.com/bertreb/pimatic-dyson.git",
+  "keywords": [
+    "pimatic",
+    "airclean",
+    "dyson",
+    "pure"
+  ],
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bertreb/pimatic-dyson.git"
+  },
+  "configSchema": "pimatic-dyson-config-schema.coffee",
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "dyson-purelink": "bertreb/dyson-purelink"
+  },
+  "peerDependencies": {
+    "pimatic": "0.9.*"
+  },
+  "engines": {
+    "node": ">=4",
+    "npm": ">=2"
+  }
+}
