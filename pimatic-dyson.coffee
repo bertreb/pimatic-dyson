@@ -138,7 +138,9 @@ module.exports = (env) ->
       @_autoOnStatus = laststate?.autoOnStatus?.value ? false
 
       @plugin.on 'clientReady', @clientListener = () =>
-        if @setDevice()
+        _device = @getDevice()
+        if _device?
+          @purelinkDevice = _device
           @deviceReady = true
           @getStatus()
         else
@@ -147,16 +149,22 @@ module.exports = (env) ->
 
       @framework.variableManager.waitForInit()
       .then ()=>
-        if @plugin.clientReady and not @statusTimer? and @purelinkDevice? and @setDevice()
-          @deviceReady = true
-          @getStatus()
+        if @plugin.clientReady and not @statusTimer? and @purelinkDevice?
+          _device = @getDevice()
+          if _device?
+            @purelinkDevice = _device
+            @deviceReady = true
+            @getStatus()
+          else
+            env.logger.debug "Device found in the cloud but not local available "
+            @setStatus(off)
         else
           env.logger.debug "Device not available "
           @setStatus(off)
 
       @getStatus = () =>
         #env.logger.debug "@getStatus: " + @plugin.clientReady
-        if @plugin.clientReady
+        if @plugin.clientReady and @purelinkDevice?
           env.logger.debug "requesting status " + JSON.stringify(@plugin.devices[0],null,2)
           @purelinkDevice.getTemperature()
           .then (temperature)=>
@@ -194,15 +202,14 @@ module.exports = (env) ->
 
       super()
 
-    setDevice: ()=>
+    getDevice: ()=>
       if @purelinkDevice?.getDevices?
         @purelinkDevice.getDevices()
         .then (devices)=>
           _device = _.find(devices, (d)=> d._deviceInfo.Serial is config.serial)
           if _device? and _.size(@purelinkDevice._devices) > 0
-            @purelinkDevice = _device
-            return true
-      return false
+            return _device
+      return null
 
 
     execute: (command, options) =>
