@@ -158,7 +158,7 @@ module.exports = (env) ->
         #env.logger.debug "@getStatus: " + @plugin.clientReady
         if @plugin.clientReady
           env.logger.debug "requesting status " + JSON.stringify(@plugin.devices[0],null,2)
-          temperature = @purelinkDevice.getTemperature()
+          @purelinkDevice.getTemperature()
           .then (temperature)=>
             if temperature?
               @_temperature = temperature
