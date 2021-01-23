@@ -77,11 +77,11 @@ module.exports = (env) ->
   class DysonDevice extends env.devices.Device
 
     attributes:
-      status:
-        description: "Status is dyson is switched on of off"
+      deviceFound:
+        description: "Status is local device is found"
         type: "boolean"
-        acronym: "Status"
-        labels: ["on","off"]
+        acronym: "Device"
+        labels: ["found","not found"]
       temperature:
         description: "Temperature"
         type: "number"
@@ -128,7 +128,7 @@ module.exports = (env) ->
       @pollTime = @plugin.polltime
       @deviceReady = false
 
-      @_status = laststate?.status?.value ? false
+      @_deviceFound = laststate?.deviceFound?.value ? false
       @_temperature = laststate?.temperature?.value ? 0
       @_airQuality = laststate?.airQuality?.value ? 0
       @_relativeHumidity = laststate?.relativeHumidity?.value ? 0
@@ -142,10 +142,11 @@ module.exports = (env) ->
         if _device?
           @purelinkDevice = _device
           @deviceReady = true
+          @setDeviceFound(true)
           @getStatus()
         else
           env.logger.debug "Device not available "
-          @setStatus(off)
+          @setDeviceFound(false)
 
       @framework.variableManager.waitForInit()
       .then ()=>
@@ -154,10 +155,11 @@ module.exports = (env) ->
           if _device?
             @purelinkDevice = _device
             @deviceReady = true
+            @setDeviceFound(true)
             @getStatus()
           else
             env.logger.debug "Device found in the cloud but not local available "
-            @setStatus(off)
+            @setDeviceFound(false)
         else
           env.logger.debug "Device not available "
           @setStatus(off)
@@ -282,7 +284,7 @@ module.exports = (env) ->
         resolve()
       )
 
-    getStatus: -> Promise.resolve(@_status)
+    getDeviceFound: -> Promise.resolve(@_deviceFound)
     getTemperature: -> Promise.resolve(@_temperature)
     getAirQuality: -> Promise.resolve(@_airQuality)
     getRelativeHumidity: -> Promise.resolve(@_relativeHumidity)
