@@ -156,7 +156,7 @@ module.exports = (env) ->
 
       @framework.variableManager.waitForInit()
       .then ()=>
-        if @plugin.clientReady and not @statusTimer? and @purelinkDevice?
+        if @plugin.clientReady and not @statusTimer?
           _device = @findDevice()
           if _device?
             @purelinkDevice = _device
@@ -173,7 +173,7 @@ module.exports = (env) ->
       @getStatus = () =>
         #env.logger.debug "@getStatus: " + @plugin.clientReady
         if @plugin.clientReady and @purelinkDevice?
-          env.logger.debug "requesting status " + JSON.stringify(@plugin.devices[0],null,2)
+          env.logger.debug "requesting status " + JSON.stringify(@purelinkDevice,null,2)
           @purelinkDevice.getTemperature()
           .then (temperature)=>
             if temperature?
