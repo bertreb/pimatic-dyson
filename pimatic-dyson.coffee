@@ -82,6 +82,11 @@ module.exports = (env) ->
         type: "boolean"
         acronym: "Device"
         labels: ["found","not found"]
+      device:
+        description: "Status of device"
+        type: "boolean"
+        acronym: "Device"
+        labels: ["on","off"]
       temperature:
         description: "Temperature"
         type: "number"
@@ -129,6 +134,7 @@ module.exports = (env) ->
       @deviceReady = false
 
       @_deviceFound = laststate?.deviceFound?.value ? false
+      @_device = laststate?.device?.value ? false
       @_temperature = laststate?.temperature?.value ? 0
       @_airQuality = laststate?.airQuality?.value ? 0
       @_relativeHumidity = laststate?.relativeHumidity?.value ? 0
@@ -138,7 +144,7 @@ module.exports = (env) ->
       @_autoOnStatus = laststate?.autoOnStatus?.value ? false
 
       @plugin.on 'clientReady', @clientListener = () =>
-        _device = @getDevice()
+        _device = @findDevice()
         if _device?
           @purelinkDevice = _device
           @deviceReady = true
@@ -151,7 +157,7 @@ module.exports = (env) ->
       @framework.variableManager.waitForInit()
       .then ()=>
         if @plugin.clientReady and not @statusTimer? and @purelinkDevice?
-          _device = @getDevice()
+          _device = @findDevice()
           if _device?
             @purelinkDevice = _device
             @deviceReady = true
@@ -162,7 +168,7 @@ module.exports = (env) ->
             @setDeviceFound(false)
         else
           env.logger.debug "Device not available "
-          @setStatus(off)
+          @setDeviceFound(false)
 
       @getStatus = () =>
         #env.logger.debug "@getStatus: " + @plugin.clientReady
@@ -204,7 +210,7 @@ module.exports = (env) ->
 
       super()
 
-    getDevice: ()=>
+    findDevice: ()=>
       if @purelinkDevice?.getDevices?
         @purelinkDevice.getDevices()
         .then (devices)=>
@@ -223,7 +229,7 @@ module.exports = (env) ->
             @purelinkDevice.turnOn()
             .then (resp)=>
               env.logger.debug "Dyson turned on"
-              @setStatus(on)
+              @setDevice(off)
               resolve()
             .catch (err) =>
               env.logger.debug "Error turning on: " + JSON.stringify(err,null,2)
@@ -233,7 +239,7 @@ module.exports = (env) ->
             @purelinkDevice.turnOff()
             .then (resp)=>
               env.logger.debug "Dyson turned off"
-              @setStatus(off)
+              @setDevice(on)
               resolve()
             .catch (err) =>
               env.logger.debug "Error turning off: " + JSON.stringify(err,null,2)
@@ -285,6 +291,7 @@ module.exports = (env) ->
       )
 
     getDeviceFound: -> Promise.resolve(@_deviceFound)
+    getDevice: -> Promise.resolve(@_device)
     getTemperature: -> Promise.resolve(@_temperature)
     getAirQuality: -> Promise.resolve(@_airQuality)
     getRelativeHumidity: -> Promise.resolve(@_relativeHumidity)
@@ -294,13 +301,13 @@ module.exports = (env) ->
     getAutoOnStatus: -> Promise.resolve(@_autoOnStatus)
 
 
-    setStatus: (_status) =>
-      @_status = Boolean _status
-      @emit 'status', Boolean _status
-
-    setEngine: (_status) =>
+    setdevice: (_status) =>
       @_engine = Boolean _status
-      @emit 'engine', Boolean _status
+      @emit 'device', Boolean _status
+
+    setDeviceFound: (_status) =>
+      @_status = Boolean _status
+      @emit 'deviceFound', Boolean _status
 
     setFanSpeed: (_status) =>
       @_fanSpeed = Number _status
