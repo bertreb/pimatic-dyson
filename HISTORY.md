@@ -8,3 +8,5 @@
 	* added rules actions
 * 20210124, v0.0.12
 	* edit cloud and local status
+* 20210124, v0.0.14
+	* change startup flow, moved to device

@@ -18,21 +18,7 @@ module.exports = (env) ->
 
       @polltime = @config.polltime ? 60000
 
-      @purelinkReady = false
-
-      @purelinkDevices = null
-
-      @framework.on 'after init', ()=>
-        @purelink = new purelink(@email, @password, @country)
-        @purelink.getDevices()
-        .then (devices)=>
-          #env.logger.debug "Devices: " + JSON.stringify(devices,null,2)
-          @purelinkDevices = devices
-          @purelinkReady = true
-          @emit "purelinkReady"
-        .catch (e) =>
-          env.logger.error 'Error in getDevices: ' +  JSON.stringify(e,null,2)
-
+      @purelink = new purelink(@email, @password, @country)
 
       @framework.deviceManager.registerDeviceClass('DysonDevice', {
         configDef: @deviceConfigDef.DysonDevice,
@@ -45,22 +31,24 @@ module.exports = (env) ->
         @framework.deviceManager.discoverMessage 'pimatic-dyson', 'Searching for new devices'
 
         if @purelinkReady
-          for device in @purelinkDevices
-            deviceConfig = device._deviceInfo
-            #env.logger.debug "DeviceConfig: " + JSON.stringify(deviceConfig,null,2)
-            _did = "dyson-" + (deviceConfig.Name).split(' ').join("_").toLowerCase()
-            if _.find(@framework.deviceManager.devicesConfig,(d) => (d.id).indexOf(_did)>=0)
-              env.logger.info "Device '" + _did + "' already in config"
-            else
-              config =
-                id: _did
-                name: deviceConfig.Name
-                class: "DysonDevice"
-                serial: deviceConfig.Serial
-                type: deviceConfig.ProductType
-                product: @getFriendlyName(deviceConfig.ProductType)
-                version: deviceConfig.Version
-              @framework.deviceManager.discoveredDevice( "Dyson", config.name, config)
+          @purelink.getDevices()
+          .then (devices)=>
+            for device in devices
+              deviceConfig = device._deviceInfo
+              #env.logger.debug "DeviceConfig: " + JSON.stringify(deviceConfig,null,2)
+              _did = "dyson-" + (deviceConfig.Name).split(' ').join("_").toLowerCase()
+              if _.find(@framework.deviceManager.devicesConfig,(d) => (d.id).indexOf(_did)>=0)
+                env.logger.info "Device '" + _did + "' already in config"
+              else
+                config =
+                  id: _did
+                  name: deviceConfig.Name
+                  class: "DysonDevice"
+                  serial: deviceConfig.Serial
+                  type: deviceConfig.ProductType
+                  product: @getFriendlyName(deviceConfig.ProductType)
+                  version: deviceConfig.Version
+                @framework.deviceManager.discoveredDevice( "Dyson", config.name, config)
       )
 
     getFriendlyName: (type)->
@@ -129,6 +117,7 @@ module.exports = (env) ->
       @name = @config.name
 
       @purelinkDevice = null
+      @purelink = @plugin.purelink
 
       @pollTime = @plugin.polltime
       @deviceReady = false
@@ -143,39 +132,29 @@ module.exports = (env) ->
       @_rotationStatus = laststate?.rotationStatus?.value ? false
       @_autoOnStatus = laststate?.autoOnStatus?.value ? false
 
-      @plugin.on 'purelinkReady', @purelinkListener = () =>
-        _device = @findDevice()
-        if _device.local?
-          @purelinkDevice = _device
-          @deviceReady = true
-          @setDeviceFound(true)
-          @getStatus()
-        else if _device.cloud?
-          env.logger.debug "Device not found locally"
-          @deviceReady = false
-          @setDeviceFound(false)
-        else
-          env.logger.debug "Device not registered in the cloud "
-          @setDeviceFound(false)
-          @deviceReady = false
-
       @framework.variableManager.waitForInit()
       .then ()=>
-        if @plugin.purelinkReady and not @statusTimer?
-          _device = @findDevice()
-          if _device.local?
-            @purelinkDevice = _device
-            @deviceReady = true
-            @setDeviceFound(true)
-            @getStatus()
-          else if _device.cloud?
-            env.logger.debug "Device not found locally"
-            @deviceReady = false
-            @setDeviceFound(false)
-          else
-            env.logger.debug "Device not registered in the cloud "
-            @setDeviceFound(false)
-            @deviceReady = false
+        #env.logger.debug "(re)starting DysonDevice #{@id}: plugin.purelink: " + @purelink
+        if @purelink?
+          @purelink.getDevices()
+          .then (devices)=>
+            env.logger.debug "Devices found in the cloud: " + _.size(devices)
+            _device = _.find(devices, (d)=> d._deviceInfo.Serial is @config.serial)
+            if _device? 
+              if _.size(@plugin.purelink._networkDevices) > 0
+                @purelinkDevice = _device
+                @deviceReady = true
+                @setDeviceFound(true)
+                @getStatus()
+                env.logger.debug "Device '#{@id}' found locally"
+              else
+                env.logger.debug "Device '#{@id}' not found locally"
+                @deviceReady = false
+                @setDeviceFound(false)
+            else
+              env.logger.debug "Device '#{@id}' not registered in the cloud "
+              @setDeviceFound(false)
+              @deviceReady = false
 
       @getStatus = () =>
         #env.logger.debug "@getStatus: " + @plugin.clientReady
@@ -349,7 +328,6 @@ module.exports = (env) ->
 
     destroy:() =>
       clearTimeout(@statusTimer) if @statusTimer?
-      @removeListener('purelinkReady', @purelinkListener)
       super()
 
   class DysonActionProvider extends env.actions.ActionProvider
