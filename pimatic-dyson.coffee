@@ -64,7 +64,7 @@ module.exports = (env) ->
       )
 
     getFriendlyName: (type)->
-      friendlyNames = 
+      friendlyNames =
         358: 'Dyson Pure Humidify+Cool'
         438: 'Dyson Pure Cool Tower'
         455: 'Dyson Pure Hot+Cool Link'
@@ -122,7 +122,7 @@ module.exports = (env) ->
         acronym: "Auto"
         labels: ["on","off"]
 
-    
+
     constructor: (config, lastState, @plugin, client, @framework) ->
       @config = config
       @id = @config.id
@@ -152,6 +152,7 @@ module.exports = (env) ->
           @getStatus()
         else
           env.logger.debug "Device not found "
+          @deviceReady = false
           @setDeviceFound(false)
 
       @framework.variableManager.waitForInit()
@@ -165,15 +166,17 @@ module.exports = (env) ->
             @getStatus()
           else
             env.logger.debug "Device not found"
+            @deviceReady = false
             @setDeviceFound(false)
         else
           env.logger.debug "Device not available "
           @setDeviceFound(false)
+          @deviceReady = false
 
       @getStatus = () =>
         #env.logger.debug "@getStatus: " + @plugin.clientReady
         if @deviceReady and @purelinkDevice?
-          env.logger.debug "requesting status " + JSON.stringify(@purelinkDevice,null,2)
+          env.logger.debug "requesting status " + JSON.stringify(@deviceReady,null,2)
           @purelinkDevice.getTemperature()
           .then (temperature)=>
             if temperature?
@@ -205,19 +208,21 @@ module.exports = (env) ->
           .then (autoOnStatus)=>
             if autoOnStatus?
               @setAutoOnStatus(autoOnStatus)
-          .finally ()=>
-            env.logger.debug "All status info received"
           .catch (e) =>
             env.logger.debug "getStatus error: " + JSON.stringify(e,null,2)
+          env.logger.debug "All status info received"
           @statusTimer = setTimeout(@getStatus, @pollTime)
           env.logger.debug "Next poll in " + @pollTime + " ms"
+        else
+          env.logger.debug "Device not found"
+
 
       super()
 
     findDevice: ()=>
       _device = _.find(@plugin.purelinkDevices, (d)=> d._deviceInfo.Serial is @config.serial)
-      #check is _device exists and if _device is locally found via bonjour (see dyson-purelink)
-      if _device? and _.size(@plugin.purelink._devices) > 0
+      #check if device exists and if device is locally found via bonjour (see dyson-purelink)
+      if _device? and _.size(@plugin.purelink._networkDevices) > 0
         return _device
       return null
 
@@ -345,13 +350,13 @@ module.exports = (env) ->
     parseAction: (input, context) =>
 
       dysonDevice = null
-      @options = 
+      @options =
         fan: false
         speed: 0
         speedVar: null
         auto: false
         rotation: false
-  
+
       dysonDevices = _(@framework.deviceManager.devices).values().filter(
         (device) => device.config.class == "DysonDevice"
       ).value()
