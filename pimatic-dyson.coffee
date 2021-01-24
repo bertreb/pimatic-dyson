@@ -39,7 +39,7 @@ module.exports = (env) ->
         createCallback: (config, lastState) => new DysonDevice(config, lastState, @, @client, @framework)
       })
 
-      #@framework.ruleManager.addActionProvider(new DysonActionProvider(@framework))
+      @framework.ruleManager.addActionProvider(new DysonActionProvider(@framework))
 
       @framework.deviceManager.on('discover', (eventData) =>
         @framework.deviceManager.discoverMessage 'pimatic-dyson', 'Searching for new devices'
@@ -197,6 +197,10 @@ module.exports = (env) ->
           .then (fanSpeed)=>
             if fanSpeed?
               @setFanSpeed(fanspeed)
+            return @purelinkDevice.getRotationStatus()
+          .then (rotation)=>
+            if rotation?
+              @setRotationStatus(rotation)
             return @purelinkDevice.getAutoOnStatus()
           .then (autoOnStatus)=>
             if autoOnStatus?
@@ -219,6 +223,8 @@ module.exports = (env) ->
 
     execute: (command, options) =>
       return new Promise((resolve,reject) =>
+
+        env.logger.debug "Execute command: " + command + ", options: " + JSON.stringify(options,null,2)
 
         switch command
           when "on"
@@ -261,7 +267,7 @@ module.exports = (env) ->
             .catch (err) =>
               env.logger.debug "Error fan: " + JSON.stringify(err,null,2)
               reject()
-          when "fanspeed"
+          when "speed"
             env.logger.debug "Turn dyson speed on: " + options.speed
             @purelinkDevice.setFanSpeed(options.speed)
             .then ()=>
@@ -273,7 +279,7 @@ module.exports = (env) ->
               reject()
           when "rotation"
             env.logger.debug "Turn dyson rotation: " + options.rotation
-            @purelinkDevice.setFanSpeed(options.rotation)
+            @purelinkDevice.setRotation(options.rotation)
             .then ()=>
               env.logger.debug "Dyson rotation turned  " + options.rotation
               @setRotationStatus(options.rotation)
@@ -335,7 +341,12 @@ module.exports = (env) ->
     parseAction: (input, context) =>
 
       dysonDevice = null
-      @options = null
+      @options = 
+        fan: false
+        speed: 0
+        speedVar: null
+        auto: false
+        rotation: false
   
       dysonDevices = _(@framework.deviceManager.devices).values().filter(
         (device) => device.config.class == "DysonDevice"
@@ -343,6 +354,16 @@ module.exports = (env) ->
 
       setCommand = (command) =>
         @command = command
+
+      speed = (m,tokens) =>
+        unless Number tokens <=100 and Number tokens >= 0
+          context?.addError("Speed must be between 0 and 100")
+          return
+        setCommand("speed")
+        @options.speed = Number tokens
+      speedVar = (m,tokens) =>
+        setCommand("speed")
+        @options.speedVar = tokens
 
       optionsString = (m,tokens) =>
         unless tokens?
@@ -374,44 +395,60 @@ module.exports = (env) ->
             )
           ),
           ((m) =>
-            return m.match(' start ')
-              .matchVariable(optionsString)
+            return m.match(' fan ')
+              .or([
+                ((m) =>
+                  @options.fan = true
+                  setCommand("fan")
+                  return m.match('on')
+                ),
+                ((m) =>
+                  @options.fan = false
+                  setCommand("fan")
+                  return m.match('off')
+                ),
+              ])
           ),
           ((m) =>
-            return m.match(' stop', (m) =>
-              setCommand('stop')
-              match = m.getFullMatch()
-            )
+            return m.match(' rotation ')
+              .or([
+                ((m) =>
+                  @options.fan = true
+                  setCommand("rotation")
+                  return m.match('on')
+                ),
+                ((m) =>
+                  @options.fan = false
+                  setCommand("rotation")
+                  return m.match('off')
+                ),
+              ])
           ),
           ((m) =>
-            return m.match(' lock', (m) =>
-              setCommand('lock')
-              match = m.getFullMatch()
-            )
+            return m.match(' speed ')
+              .or([
+                ((m) =>
+                  m.matchNumber(speed)
+                ),
+                ((m) =>
+                  m.matchVariable(speedVar)
+                ),
+              ])
           ),
           ((m) =>
-            return m.match(' unlock', (m) =>
-              setCommand('unlock')
-              match = m.getFullMatch()
-            )
-          ),
-          ((m) =>
-            return m.match(' startCharge', (m) =>
-              setCommand('startCharge')
-              match = m.getFullMatch()
-            )
-          ),
-          ((m) =>
-            return m.match(' stopCharge', (m) =>
-              setCommand('stopCharge')
-              match = m.getFullMatch()
-            )
-          ),
-          ((m) =>
-            return m.match(' refresh', (m) =>
-              setCommand('refresh')
-              match = m.getFullMatch()
-            )
+            return m.match(' auto ')
+              .or([
+                ((m) =>
+                  @options.fan = true
+                  setCommand("auto")
+                  return m.match('on')
+                ),
+                ((m) =>
+                  @options.fan = false
+                  setCommand("auto")
+                  return m.match('off')
+                ),
+              ])
           )
         ])
 
@@ -433,18 +470,19 @@ module.exports = (env) ->
 
     executeAction: (simulate) =>
       if simulate
-        return __("would have cleaned \"%s\"", "")
+        return __("would have Dyson pure action \"%s\"", "")
       else
 
-        if @options?
-          _var = @options.slice(1) if @options.indexOf('$') >= 0
-          _options = @framework.variableManager.getVariableValue(_var)
-          unless _options?
+        if @options.speedVar?
+          _var = @options.speedVar.slice(1) if @options.speedVar.indexOf('$') >= 0
+          _optionsSpeed = @framework.variableManager.getVariableValue(_var)
+          unless _optionsSpeed?
             return __("\"%s\" Rule not executed, #{_var} is not a valid variable", "")
-        else
-          _options = null
+          if _optionsSpeed > 100 then _optionsSpeed = 100
+          if _optionsSpeed < 0 then _optionsSpeed = 0
+          @options.speed = _optionsSpeed
 
-        @dysonDevice.execute(@command, _options)
+        @dysonDevice.execute(@command, @options)
         .then(()=>
           return __("\"%s\" Rule executed", @command)
         ).catch((err)=>
