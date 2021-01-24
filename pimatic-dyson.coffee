@@ -29,7 +29,7 @@ module.exports = (env) ->
           #env.logger.debug "Devices: " + JSON.stringify(devices,null,2)
           @purelinkDevices = devices
           @purelinkReady = true
-          @emit "clientReady"
+          @emit "purelinkReady"
         .catch (e) =>
           env.logger.error 'Error in getDevices: ' +  JSON.stringify(e,null,2)
 
@@ -78,7 +78,7 @@ module.exports = (env) ->
 
     attributes:
       deviceFound:
-        description: "Status is local device is found"
+        description: "Status if local device is found"
         type: "boolean"
         acronym: "Device"
         labels: ["found","not found"]
@@ -151,7 +151,7 @@ module.exports = (env) ->
           @setDeviceFound(true)
           @getStatus()
         else
-          env.logger.debug "Device not available "
+          env.logger.debug "Device not found "
           @setDeviceFound(false)
 
       @framework.variableManager.waitForInit()
@@ -164,7 +164,7 @@ module.exports = (env) ->
             @setDeviceFound(true)
             @getStatus()
           else
-            env.logger.debug "Device found in the cloud but not local available "
+            env.logger.debug "Device not found"
             @setDeviceFound(false)
         else
           env.logger.debug "Device not available "
@@ -215,8 +215,9 @@ module.exports = (env) ->
       super()
 
     findDevice: ()=>
-      _device = _.find(@plugin.purelinkDevices, (d)=> d._deviceInfo.Serial is config.serial)
-      if _device?
+      _device = _.find(@plugin.purelinkDevices, (d)=> d._deviceInfo.Serial is @config.serial)
+      #check is _device exists and if _device is locally found via bonjour (see dyson-purelink)
+      if _device? and _.size(@plugin.purelink._devices) > 0
         return _device
       return null
 
@@ -225,6 +226,9 @@ module.exports = (env) ->
       return new Promise((resolve,reject) =>
 
         env.logger.debug "Execute command: " + command + ", options: " + JSON.stringify(options,null,2)
+
+        unless @purelinkReady
+          reject("Device not ready")
 
         switch command
           when "on"
