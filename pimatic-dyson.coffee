@@ -18,15 +18,21 @@ module.exports = (env) ->
 
       @polltime = @config.polltime ? 60000
 
-      @client = null
-      @clientReady = false
+      @purelinkReady = false
 
-      @devices = []
+      @purelinkDevices = null
 
       @framework.on 'after init', ()=>
         @purelink = new purelink(@email, @password, @country)
-        @clientReady = true
-        @emit "clientReady"
+        @purelink.getDevices()
+        .then (devices)=>
+          #env.logger.debug "Devices: " + JSON.stringify(devices,null,2)
+          @purelinkDevices = devices
+          @purelinkReady = true
+          @emit "clientReady"
+        .catch (e) =>
+          env.logger.error 'Error in getDevices: ' +  JSON.stringify(e,null,2)
+
 
       @framework.deviceManager.registerDeviceClass('DysonDevice', {
         configDef: @deviceConfigDef.DysonDevice,
@@ -38,29 +44,23 @@ module.exports = (env) ->
       @framework.deviceManager.on('discover', (eventData) =>
         @framework.deviceManager.discoverMessage 'pimatic-dyson', 'Searching for new devices'
 
-        if @clientReady
-          @purelink.getDevices()
-          .then((devices) =>
-            for device in devices
-              #env.logger.info "Device: " + JSON.stringify(device,null,2)
-              deviceConfig = device._deviceInfo
-              env.logger.info "DeviceConfig: " + JSON.stringify(deviceConfig,null,2)
-              _did = "dyson-" + (deviceConfig.Name).split(' ').join("_").toLowerCase()
-              if _.find(@framework.deviceManager.devicesConfig,(d) => (d.id).indexOf(_did)>=0)
-                env.logger.info "Device '" + _did + "' already in config"
-              else
-                config =
-                  id: _did
-                  name: deviceConfig.Name
-                  class: "DysonDevice"
-                  serial: deviceConfig.Serial
-                  type: deviceConfig.ProductType
-                  product: @getFriendlyName(deviceConfig.ProductType)
-                  version: deviceConfig.Version
-                @framework.deviceManager.discoveredDevice( "Dyson", config.name, config)
-          ).catch((e) =>
-            env.logger.error 'Error in getDevices: ' +  JSON.stringify(e,null,2)
-          )
+        if @purelinkReady
+          for device in @purelinkDevices
+            deviceConfig = device._deviceInfo
+            #env.logger.debug "DeviceConfig: " + JSON.stringify(deviceConfig,null,2)
+            _did = "dyson-" + (deviceConfig.Name).split(' ').join("_").toLowerCase()
+            if _.find(@framework.deviceManager.devicesConfig,(d) => (d.id).indexOf(_did)>=0)
+              env.logger.info "Device '" + _did + "' already in config"
+            else
+              config =
+                id: _did
+                name: deviceConfig.Name
+                class: "DysonDevice"
+                serial: deviceConfig.Serial
+                type: deviceConfig.ProductType
+                product: @getFriendlyName(deviceConfig.ProductType)
+                version: deviceConfig.Version
+              @framework.deviceManager.discoveredDevice( "Dyson", config.name, config)
       )
 
     getFriendlyName: (type)->
@@ -82,7 +82,7 @@ module.exports = (env) ->
         type: "boolean"
         acronym: "Device"
         labels: ["found","not found"]
-      device:
+      deviceStatus:
         description: "Status of device"
         type: "boolean"
         acronym: "Device"
@@ -134,7 +134,7 @@ module.exports = (env) ->
       @deviceReady = false
 
       @_deviceFound = laststate?.deviceFound?.value ? false
-      @_device = laststate?.device?.value ? false
+      @_deviceStatus = laststate?.deviceStatus?.value ? false
       @_temperature = laststate?.temperature?.value ? 0
       @_airQuality = laststate?.airQuality?.value ? 0
       @_relativeHumidity = laststate?.relativeHumidity?.value ? 0
@@ -143,7 +143,7 @@ module.exports = (env) ->
       @_rotationStatus = laststate?.rotationStatus?.value ? false
       @_autoOnStatus = laststate?.autoOnStatus?.value ? false
 
-      @plugin.on 'clientReady', @clientListener = () =>
+      @plugin.on 'purelinkReady', @purelinkListener = () =>
         _device = @findDevice()
         if _device?
           @purelinkDevice = _device
@@ -156,7 +156,7 @@ module.exports = (env) ->
 
       @framework.variableManager.waitForInit()
       .then ()=>
-        if @plugin.clientReady and not @statusTimer?
+        if @plugin.purelinkReady and not @statusTimer?
           _device = @findDevice()
           if _device?
             @purelinkDevice = _device
@@ -172,7 +172,7 @@ module.exports = (env) ->
 
       @getStatus = () =>
         #env.logger.debug "@getStatus: " + @plugin.clientReady
-        if @plugin.clientReady and @purelinkDevice?
+        if @deviceReady and @purelinkDevice?
           env.logger.debug "requesting status " + JSON.stringify(@purelinkDevice,null,2)
           @purelinkDevice.getTemperature()
           .then (temperature)=>
@@ -211,12 +211,9 @@ module.exports = (env) ->
       super()
 
     findDevice: ()=>
-      if @purelinkDevice?.getDevices?
-        @purelinkDevice.getDevices()
-        .then (devices)=>
-          _device = _.find(devices, (d)=> d._deviceInfo.Serial is config.serial)
-          if _device? and _.size(@purelinkDevice._devices) > 0
-            return _device
+      _device = _.find(@plugin.purelinkDevices, (d)=> d._deviceInfo.Serial is config.serial)
+      if _device?
+        return _device
       return null
 
 
@@ -229,7 +226,7 @@ module.exports = (env) ->
             @purelinkDevice.turnOn()
             .then (resp)=>
               env.logger.debug "Dyson turned on"
-              @setDevice(off)
+              @setDeviceStatus(off)
               resolve()
             .catch (err) =>
               env.logger.debug "Error turning on: " + JSON.stringify(err,null,2)
@@ -239,7 +236,7 @@ module.exports = (env) ->
             @purelinkDevice.turnOff()
             .then (resp)=>
               env.logger.debug "Dyson turned off"
-              @setDevice(on)
+              @setDeviceStatus(on)
               resolve()
             .catch (err) =>
               env.logger.debug "Error turning off: " + JSON.stringify(err,null,2)
@@ -291,7 +288,7 @@ module.exports = (env) ->
       )
 
     getDeviceFound: -> Promise.resolve(@_deviceFound)
-    getDevice: -> Promise.resolve(@_device)
+    getDeviceStatus: -> Promise.resolve(@_deviceStatus)
     getTemperature: -> Promise.resolve(@_temperature)
     getAirQuality: -> Promise.resolve(@_airQuality)
     getRelativeHumidity: -> Promise.resolve(@_relativeHumidity)
@@ -301,9 +298,9 @@ module.exports = (env) ->
     getAutoOnStatus: -> Promise.resolve(@_autoOnStatus)
 
 
-    setdevice: (_status) =>
+    setDeviceStatus: (_status) =>
       @_engine = Boolean _status
-      @emit 'device', Boolean _status
+      @emit 'deviceStatus', Boolean _status
 
     setDeviceFound: (_status) =>
       @_status = Boolean _status
@@ -328,7 +325,7 @@ module.exports = (env) ->
 
     destroy:() =>
       clearTimeout(@statusTimer) if @statusTimer?
-      @removeListener('clientReady', @clientListener)
+      @removeListener('purelinkReady', @purelinkListener)
       super()
 
   class DysonActionProvider extends env.actions.ActionProvider
