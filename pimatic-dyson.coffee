@@ -145,38 +145,41 @@ module.exports = (env) ->
 
       @plugin.on 'purelinkReady', @purelinkListener = () =>
         _device = @findDevice()
-        if _device?
+        if _device.local?
           @purelinkDevice = _device
           @deviceReady = true
           @setDeviceFound(true)
           @getStatus()
-        else
-          env.logger.debug "Device not found "
+        else if _device.cloud?
+          env.logger.debug "Device not found locally"
           @deviceReady = false
           @setDeviceFound(false)
+        else
+          env.logger.debug "Device not registered in the cloud "
+          @setDeviceFound(false)
+          @deviceReady = false
 
       @framework.variableManager.waitForInit()
       .then ()=>
         if @plugin.purelinkReady and not @statusTimer?
           _device = @findDevice()
-          if _device?
+          if _device.local?
             @purelinkDevice = _device
             @deviceReady = true
             @setDeviceFound(true)
             @getStatus()
-          else
-            env.logger.debug "Device not found"
+          else if _device.cloud?
+            env.logger.debug "Device not found locally"
             @deviceReady = false
             @setDeviceFound(false)
-        else
-          env.logger.debug "Device not available "
-          @setDeviceFound(false)
-          @deviceReady = false
+          else
+            env.logger.debug "Device not registered in the cloud "
+            @setDeviceFound(false)
+            @deviceReady = false
 
       @getStatus = () =>
         #env.logger.debug "@getStatus: " + @plugin.clientReady
         if @deviceReady and @purelinkDevice?
-          env.logger.debug "requesting status " + JSON.stringify(@deviceReady,null,2)
           @purelinkDevice.getTemperature()
           .then (temperature)=>
             if temperature?
@@ -214,18 +217,24 @@ module.exports = (env) ->
           @statusTimer = setTimeout(@getStatus, @pollTime)
           env.logger.debug "Next poll in " + @pollTime + " ms"
         else
-          env.logger.debug "Device not found"
+          env.logger.info "Device not available, no more polling, restart device or plugin"
 
 
       super()
 
     findDevice: ()=>
+      result =
+        device: null
+        cloud: false
+        local: false
       _device = _.find(@plugin.purelinkDevices, (d)=> d._deviceInfo.Serial is @config.serial)
       #check if device exists and if device is locally found via bonjour (see dyson-purelink)
-      if _device? and _.size(@plugin.purelink._networkDevices) > 0
-        return _device
-      return null
-
+      if _device? 
+        result.device = _device
+        result.cloud = true
+        if _.size(@plugin.purelink._networkDevices) > 0
+          result.local = true
+      return result
 
     execute: (command, options) =>
       return new Promise((resolve,reject) =>

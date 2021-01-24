@@ -6,5 +6,5 @@
 	* initial release
 * 20210124, v0.0.9
 	* added rules actions
-* 20210124, v0.0.11
-	* edit local status
+* 20210124, v0.0.12
+	* edit cloud and local status
