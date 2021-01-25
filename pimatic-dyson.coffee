@@ -135,15 +135,15 @@ module.exports = (env) ->
       @framework.variableManager.waitForInit()
       .then ()=>
         #env.logger.debug "(re)starting DysonDevice #{@id}: plugin.purelink: " + @purelink
-        env.logger.debug "============> GetDevices disabled"
-        return
+        #env.logger.debug "============> GetDevices disabled"
+        #return
         if @purelink?
           @purelink.getDevices()
           .then (devices)=>
             #deviceList = _.map(devices,(d)=> "dyson-"+d._deviceInfo.Name.toLowerCase())
             env.logger.debug "Devices found in the cloud: " + _.size(devices) # deviceList
             _device = _.find(devices, (d)=> d._deviceInfo.Serial is @config.serial)
-            if _device? 
+            if _device?
               if _.size(@plugin.purelink._networkDevices) > 0
                 @purelinkDevice = _device
                 @deviceReady = true
@@ -211,7 +211,7 @@ module.exports = (env) ->
         local: false
       _device = _.find(@plugin.purelinkDevices, (d)=> d._deviceInfo.Serial is @config.serial)
       #check if device exists and if device is locally found via bonjour (see dyson-purelink)
-      if _device? 
+      if _device?
         result.device = _device
         result.cloud = true
         if _.size(@plugin.purelink._networkDevices) > 0

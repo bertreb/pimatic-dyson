@@ -12,3 +12,5 @@
 	* change startup flow, moved to device
 * 20210125, v0.0.15
 	* dyson lib disabled
+* 20210125, v0.0.16
+	* dyson lib enabled
