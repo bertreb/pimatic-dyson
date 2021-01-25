@@ -7,9 +7,9 @@ This plugin works for Dyson Pure devices.
 ## Config of the plugin
 ```
 {
-  email:       The email address of your Dyson account
-  password:    The password of your Dyson account
-  countryCode: The countryCode like 'DE' or 'NL'
+  email:       Email address of your Dyson account
+  password:    Password of your Dyson account
+  countryCode: CountryCode like 'DE' or 'NL'
   polltime:    Time for update in values (default 1 minute)
   debug:       Debug mode. Writes debug messages to the Pimatic log, if set to true.
 }
@@ -22,25 +22,25 @@ The automatic generated Id must not be change. Its based on the serial with pref
 
 ```
 {
-  serial:   The serial number of your Dyson device
-  type:     The type id of your Dyson device
-  product:  The product name of your Dyson device
-  version:  The version number
+  serial:   Serial number of your Dyson device
+  type:     Type id of your Dyson device
+  product:  Product name of your Dyson device
+  version:  Version number
 }
 ```
 
 The following attributes are updated and visible in the Gui.
 
 ```
-deviceFound:      If your Dyson device is found in the local network
-deviceStatus:     If device is on or off
-temperature:      Temperature
-airQuality:       The air quality
-relativeHumidity: The relative humidity
-fanStatus:        If the fan is on or off
-fanSpeed:         The speed of the fan (0-100)
-rotationStatus:   If the rotation is switched on or off
-autoOnStatus:     If the auto modus is on or off
+deviceFound:      Dyson device is found in the local network
+deviceStatus:     Device is on or off
+temperature:      Air temperature
+airQuality:       Air quality
+relativeHumidity: Relative humidity
+fanStatus:        Fan is on or off
+fanSpeed:         Speed of the fan (0-100)
+rotationStatus:   Rotation is switched on or off
+autoOnStatus:     Auto modus is on or off
 ```
 
 The device can be controlled via rules.
