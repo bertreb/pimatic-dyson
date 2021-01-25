@@ -16,3 +16,5 @@
 	* dyson lib enabled
 * 20210125, v0.0.17
 	* edit
+* 20210125, v0.1.0
+	* initial release
