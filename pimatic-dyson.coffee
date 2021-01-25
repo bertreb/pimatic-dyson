@@ -19,6 +19,9 @@ module.exports = (env) ->
       @polltime = @config.polltime ? 60000
 
       @purelink = new purelink(@email, @password, @country)
+      @purelinkReady = true
+
+      env.logger.debug "@purelink: " + JSON.stringify(@purelink,null,2)
 
       @framework.deviceManager.registerDeviceClass('DysonDevice', {
         configDef: @deviceConfigDef.DysonDevice,
