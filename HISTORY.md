@@ -10,3 +10,5 @@
 	* edit cloud and local status
 * 20210124, v0.0.14
 	* change startup flow, moved to device
+* 20210125, v0.0.15
+	* dyson lib disabled

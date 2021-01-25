@@ -135,18 +135,21 @@ module.exports = (env) ->
       @framework.variableManager.waitForInit()
       .then ()=>
         #env.logger.debug "(re)starting DysonDevice #{@id}: plugin.purelink: " + @purelink
+        env.logger.debug "============> GetDevices disabled"
+        return
         if @purelink?
           @purelink.getDevices()
           .then (devices)=>
-            env.logger.debug "Devices found in the cloud: " + _.size(devices)
+            #deviceList = _.map(devices,(d)=> "dyson-"+d._deviceInfo.Name.toLowerCase())
+            env.logger.debug "Devices found in the cloud: " + _.size(devices) # deviceList
             _device = _.find(devices, (d)=> d._deviceInfo.Serial is @config.serial)
             if _device? 
               if _.size(@plugin.purelink._networkDevices) > 0
                 @purelinkDevice = _device
                 @deviceReady = true
                 @setDeviceFound(true)
-                @getStatus()
-                env.logger.debug "Device '#{@id}' found locally"
+                @startStatusPolling()
+                env.logger.debug "Device '#{@id}' found locally, status polling started"
               else
                 env.logger.debug "Device '#{@id}' not found locally"
                 @deviceReady = false
@@ -156,8 +159,8 @@ module.exports = (env) ->
               @setDeviceFound(false)
               @deviceReady = false
 
-      @getStatus = () =>
-        #env.logger.debug "@getStatus: " + @plugin.clientReady
+      @startStatusPolling = () =>
+        #env.logger.debug "@startStatusPolling: " + @plugin.clientReady
         if @deviceReady and @purelinkDevice?
           @purelinkDevice.getTemperature()
           .then (temperature)=>
@@ -191,9 +194,9 @@ module.exports = (env) ->
             if autoOnStatus?
               @setAutoOnStatus(autoOnStatus)
           .catch (e) =>
-            env.logger.debug "getStatus error: " + JSON.stringify(e,null,2)
+            env.logger.debug "GetStatus error: " + JSON.stringify(e,null,2)
           env.logger.debug "All status info received"
-          @statusTimer = setTimeout(@getStatus, @pollTime)
+          @statusTimer = setTimeout(@startStatusPolling, @pollTime)
           env.logger.debug "Next poll in " + @pollTime + " ms"
         else
           env.logger.info "Device not available, no more polling, restart device or plugin"
