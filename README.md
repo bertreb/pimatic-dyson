@@ -7,18 +7,18 @@ This plugin works for Dyson Pure devices.
 ## Config of the plugin
 ```
 {
-  email:  	 	The email address of your Dyson account
-  password:  	The password of your Dyson account
-  countryCode:  The countryCode like 'DE' or 'NL'
-  polltime:     Time for update in values (default 1 minute)
-  debug:        Debug mode. Writes debug messages to the Pimatic log, if set to true.
+  email:       The email address of your Dyson account
+  password:    The password of your Dyson account
+  countryCode: The countryCode like 'DE' or 'NL'
+  polltime:    Time for update in values (default 1 minute)
+  debug:       Debug mode. Writes debug messages to the Pimatic log, if set to true.
 }
 ```
 
 ## Config of a DysonDevice
 
 Devices are added via the discovery function. Per registered Dyson device a DysonDevice is discovered unless the device is already in the config.
-The automatic generated Id must not be change. Its based on the serial with prefix 'dyson-'. Its an unique reference to your device. You can change the Pimatic device name after you have saved the device. 
+The automatic generated Id must not be change. Its based on the serial with prefix 'dyson-'. Its an unique reference to your device. You can change the Pimatic device name after you have saved the device.
 
 ```
 {
@@ -47,13 +47,13 @@ The device can be controlled via rules.
 
 The action syntax:
 ```
-  dyson <DysonDevice Id> 
-  	on | off 
+  dyson <DysonDevice Id>
+  	on | off
   	auto [ on | off]  
   	fan [ on | off]
-  	speed [ <0-100> | $speed-var] 
+  	speed [ <0-100> | $speed-var]
   	rotation [ on | off ]
-      
+
 ```
 
 The $speed-var must be a number between 0-100
