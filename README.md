@@ -22,7 +22,7 @@ The automatic generated Id must not be change. Its based on the serial with pref
 
 ```
 {
-  serial:   De serial number of your Dyson device
+  serial:   The serial number of your Dyson device
   type:     The type id of your Dyson device
   product:  The product name of your Dyson device
   version:  The version number
@@ -32,15 +32,15 @@ The automatic generated Id must not be change. Its based on the serial with pref
 The following attributes are updated and visible in the Gui.
 
 ```
-deviceFound:      "If your Dyson device is found in the local network"
-deviceStatus:     "If device is on or off"
-temperature:      "Temperature"
-airQuality:       "The air quality"
-relativeHumidity: "The relative humidity"
-fanStatus:        "If the fan is on or off"
-fanSpeed:         "The speed of the fan (0-100)"
-rotationStatus:   "If the rotation is switched on or off"
-autoOnStatus:     "If the auto modus is on or off"
+deviceFound:      If your Dyson device is found in the local network
+deviceStatus:     If device is on or off
+temperature:      Temperature
+airQuality:       The air quality
+relativeHumidity: The relative humidity
+fanStatus:        If the fan is on or off
+fanSpeed:         The speed of the fan (0-100)
+rotationStatus:   If the rotation is switched on or off
+autoOnStatus:     If the auto modus is on or off
 ```
 
 The device can be controlled via rules.
