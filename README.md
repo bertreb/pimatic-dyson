@@ -53,7 +53,6 @@ The action syntax:
   	fan [ on | off]
   	speed [ <0-100> | $speed-var]
   	rotation [ on | off ]
-
 ```
 
 The $speed-var must be a number between 0-100
