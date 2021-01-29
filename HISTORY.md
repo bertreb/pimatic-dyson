@@ -18,3 +18,5 @@
 	* edit
 * 20210125, v0.1.0
 	* initial release
+* 20210129, v0.1.1
+	* handling error wrong credentials
