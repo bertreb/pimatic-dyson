@@ -33,7 +33,7 @@ module.exports = (env) ->
       @framework.deviceManager.on('discover', (eventData) =>
         @framework.deviceManager.discoverMessage 'pimatic-dyson', 'Searching for new devices'
 
-        if @purelinkReady
+        if @purelinkReady and _.size(@purelink.devices) > 0
           @purelink.getDevices()
           .then (devices)=>
             for device in devices
@@ -52,6 +52,8 @@ module.exports = (env) ->
                   product: @getFriendlyName(deviceConfig.ProductType)
                   version: deviceConfig.Version
                 @framework.deviceManager.discoveredDevice( "Dyson", config.name, config)
+          .catch (err)=>
+            env.logger.error "Error discovery @purelink.getDevices(): " + err
       )
 
     getFriendlyName: (type)->
@@ -138,9 +140,9 @@ module.exports = (env) ->
       @framework.variableManager.waitForInit()
       .then ()=>
         #env.logger.debug "(re)starting DysonDevice #{@id}: plugin.purelink: " + @purelink
-        #env.logger.debug "============> GetDevices disabled"
+        env.logger.debug "============>  @purelink?.getDevices? size: " + _.size(@purelink._devices)
         #return
-        if @purelink?
+        if _.size(@purelink._devices) > 0 # devcies registered in the cloud
           @purelink.getDevices()
           .then (devices)=>
             #deviceList = _.map(devices,(d)=> "dyson-"+d._deviceInfo.Name.toLowerCase())
@@ -161,6 +163,9 @@ module.exports = (env) ->
               env.logger.debug "Device '#{@id}' not registered in the cloud "
               @setDeviceFound(false)
               @deviceReady = false
+          .catch (err)=>
+            env.logger.error "Error after init @purelink.getDevices(): " + err
+
 
       @startStatusPolling = () =>
         #env.logger.debug "@startStatusPolling: " + @plugin.clientReady
@@ -212,7 +217,8 @@ module.exports = (env) ->
         device: null
         cloud: false
         local: false
-      _device = _.find(@plugin.purelinkDevices, (d)=> d._deviceInfo.Serial is @config.serial)
+      # check if device exists in the cloud
+      _device = _.find(@purelink._devices, (d)=> d._deviceInfo.Serial is @config.serial)
       #check if device exists and if device is locally found via bonjour (see dyson-purelink)
       if _device?
         result.device = _device
