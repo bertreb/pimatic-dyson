@@ -11,6 +11,7 @@
     "pimatic-dyson.coffee",
     "pimatic-dyson-config-schema.coffee",
     "device-config-schema.coffee",
+    "dyson-purelink",
     "README.md",
     "LICENSE",
     "HISTORY.md"
@@ -22,7 +23,7 @@
     "dyson",
     "pure"
   ],
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bertreb/pimatic-dyson.git"
@@ -30,7 +31,11 @@
   "configSchema": "pimatic-dyson-config-schema.coffee",
   "dependencies": {
     "lodash": "^4.17.15",
-    "dyson-purelink": "bertreb/dyson-purelink"
+    "bonjour": "^3.5.0",
+    "debug": "^2.6.8",
+    "mqtt": "^2.9.1",
+    "request": "^2.81.0",
+    "request-promise-native": "^1.0.4"
   },
   "peerDependencies": {
     "pimatic": "0.9.*"

@@ -3,7 +3,7 @@ module.exports = (env) ->
   assert = env.require 'cassert'
   M = env.matcher
   _ = require('lodash')
-  purelink = require('dyson-purelink')
+  purelink = require('./dyson-purelink')
 
   class DysonPlugin extends env.plugins.Plugin
     init: (app, @framework, @config) =>
@@ -33,7 +33,7 @@ module.exports = (env) ->
       @framework.deviceManager.on('discover', (eventData) =>
         @framework.deviceManager.discoverMessage 'pimatic-dyson', 'Searching for new devices'
 
-        if @purelinkReady and _.size(@purelink.devices) > 0
+        if @purelinkReady and @purelink? # and _.size(@purelink._devices) > 0
           @purelink.getDevices()
           .then (devices)=>
             for device in devices
@@ -140,9 +140,8 @@ module.exports = (env) ->
       @framework.variableManager.waitForInit()
       .then ()=>
         #env.logger.debug "(re)starting DysonDevice #{@id}: plugin.purelink: " + @purelink
-        env.logger.debug "============>  @purelink?.getDevices? size: " + _.size(@purelink._devices)
         #return
-        if _.size(@purelink._devices) > 0 # devcies registered in the cloud
+        if @purelink? # devcies registered in the cloud
           @purelink.getDevices()
           .then (devices)=>
             #deviceList = _.map(devices,(d)=> "dyson-"+d._deviceInfo.Name.toLowerCase())

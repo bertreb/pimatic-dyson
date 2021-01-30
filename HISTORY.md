@@ -20,3 +20,5 @@
 	* initial release
 * 20210129, v0.1.1
 	* handling error wrong credentials
+* 20210130, v0.1.2
+	* update api request
