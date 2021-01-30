@@ -22,3 +22,5 @@
 	* handling error wrong credentials
 * 20210130, v0.1.2
 	* update api request
+* 20210130, v0.1.3
+	* edit status handling

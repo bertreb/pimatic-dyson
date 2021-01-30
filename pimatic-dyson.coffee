@@ -325,8 +325,8 @@ module.exports = (env) ->
       @emit 'fanSpeed', Number _status
 
     setFanStatus: (_status) =>
-      @_fanStatus = Number _status
-      @emit 'fanStatus', Number _status
+      @_fanStatus = Boolean _status
+      @emit 'fanStatus', Boolean _status
 
     setRotationStatus: (_status) =>
       @_rotationStatus = Boolean _status
