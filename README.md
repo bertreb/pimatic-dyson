@@ -1,6 +1,7 @@
 # pimatic-dyson
 Plugin for connecting Dyson Pure devices to Pimatic
 
+The plugin is based on an embedded and modified version of the dyson-purelink library of (K.Augenberg)[https://github.com/auchenberg].
 The plugin can be installed via the plugins page of Pimatic.
 This plugin works for Dyson Pure devices.
 
